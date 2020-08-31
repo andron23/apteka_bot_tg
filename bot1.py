@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import datetime
 
-API_Token = "1213910596:AAGTixK8EYXSrFgTLlvdtk62LeUw1NFUxgk"
+API_Token = "tg token"
 bot = telebot.TeleBot(API_Token)
 ids = {}
 states_db = {}
