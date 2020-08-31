@@ -11,8 +11,8 @@ from bonus_api import Bonus
 API_Token = "1213910596:AAGTixK8EYXSrFgTLlvdtk62LeUw1NFUxgk"
 bot = telebot.TeleBot(API_Token)
 ids = {}
-#states_db = {}
-print(states_db)
+states_db = {}
+#print(states_db)
 states = {
     'check_balance': 1, 
     'enter_card': 2, 
