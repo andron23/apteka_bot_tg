@@ -1,6 +1,6 @@
 import telebot 
-import dbworker
-import config4 as config
+#import dbworker
+#import config4 as config
 import requests
 from telebot import types
 import requests
@@ -10,6 +10,15 @@ from datetime import datetime
 API_Token = "1213910596:AAGTixK8EYXSrFgTLlvdtk62LeUw1NFUxgk"
 bot = telebot.TeleBot(API_Token)
 ids = {}
+states_db = {}
+
+states = {
+    'check_balance': 1, 
+    'enter_card': 2, 
+    'enter_birthdate': 3, 
+    'enter_phone': 4, 
+    'enter_name': 5
+}
 
 sign_in = requests.post('https://bonus.rarus-online.com:88/sign_in', headers = {'Content-Type': 'application/json;charset:UTF-8'}, json = {
   "login"     :"2b1601u0",
@@ -37,9 +46,10 @@ def greeting(message):
 def balance(message):
     chat_id = message.chat.id
     bot.reply_to(message, "Введите номер телефона.")
-    dbworker.set_state(chat_id, config.States.S_ENTER_PHONE.value)
+    states_db[chat_id] = states['check_balance']
+    #dbworker.set_state(chat_id, config.States.S_ENTER_PHONE.value)
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_PHONE.value)
+@bot.message_handler(func=lambda message: states_db[message.chat.id] == states['check_balance'])
 def user_entering_phone(message):
     phone = message.text
     card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?phone={}'.format(phone), headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token})
@@ -53,11 +63,13 @@ def callback_inline(call):
         if call.data == "balance_check":
             chat_id=call.message.chat.id
             bot.send_message(chat_id, text="Введите номер телефона.")
-            dbworker.set_state(chat_id, config.States.S_ENTER_PHONE.value)
+            states_db[chat_id] = states['check_balance']
+            #dbworker.set_state(chat_id, config.States.S_ENTER_PHONE.value)
         elif call.data == "register":
             chat_id=call.message.chat.id
             bot.send_message(chat_id, text="Отлично, для начала, введите номер своей карты.")
-            dbworker.set_state(chat_id, config.States.S_ENTER_CARD.value) 
+            states_db[chat_id] = states['enter_card']
+            #dbworker.set_state(chat_id, config.States.S_ENTER_CARD.value) 
         elif call.data == "male":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
@@ -65,7 +77,8 @@ def callback_inline(call):
                   headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
                   json = {'gender': 'male'})
             bot.send_message(chat_id, text="Введите Вашу дату рождения. Например: 01.01.1900")
-            dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
+            states_db[chat_id] = states['enter_birthdate']
+            #dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
         elif call.data == "female":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
@@ -73,7 +86,8 @@ def callback_inline(call):
                   headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
                   json = {'gender': 'female'})
             bot.send_message(chat_id, text="Введите Вашу дату рождения. Например: 01.01.1900")
-            dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
+            states_db[chat_id] = states['enter_birthdate']
+            #dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
             #keyboard = types.InlineKeyboardMarkup()
             #balance_but = types.InlineKeyboardButton(text="Баланс", callback_data="balance_check") 
             #keyboard.add(balance_but)   
@@ -101,7 +115,7 @@ def callback_inline(call):
             bot.send_message(chat_id, text="Вы успешно зарегистрированы! Хотите узнать свой баланс?", reply_markup = keyboard)
 
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_CARD.value)
+@bot.message_handler(func=lambda message: states_db[message.chat.id] == states['enter_card'])
 def user_entering_barcode(message):
     global ids
     chat_id = message.chat.id
@@ -110,9 +124,10 @@ def user_entering_barcode(message):
     id = card_info.json()['cards'][0]['user_id']
     ids[chat_id] = id
     bot.send_message(chat_id, text="Введите Ваш телефон.")
-    dbworker.set_state(chat_id, config.States.S_ENTER_PHONE_REG.value)
+    states_db[chat_id] = states['enter_phone']
+    #dbworker.set_state(chat_id, config.States.S_ENTER_PHONE_REG.value)
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_PHONE_REG.value)
+@bot.message_handler(func=lambda message: states_db[message.chat.id] == states['enter_phone'])
 def user_entering_phone_reg(message):
     global ids
     chat_id = message.chat.id
@@ -122,10 +137,11 @@ def user_entering_phone_reg(message):
                   headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
                   json = {'phone': '{}'.format(phone)})
     bot.send_message(chat_id, text="Введите Ваше имя, фамилию и отчество.")
-    dbworker.set_state(chat_id, config.States.S_ENTER_NAME.value)
-    print("Name ok")
+    states_db[chat_id] = states['enter_name']
+    #dbworker.set_state(chat_id, config.States.S_ENTER_NAME.value)
+    #print("Name ok")
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_NAME.value)
+@bot.message_handler(func=lambda message: states_db[message.chat.id] == states['enter_name'])
 def user_entering_name(message):
     global ids
     chat_id = message.chat.id
@@ -143,7 +159,7 @@ def user_entering_name(message):
     
     
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_DATE.value)
+@bot.message_handler(func=lambda message: states_db[message.chat.id] == states['enter_birthdate'])
 def user_entering_date(message):
     global ids
     chat_id = message.chat.id
@@ -164,18 +180,18 @@ def user_entering_date(message):
     bot.reply_to(message, "Отлично, остался один шаг. Вы согласны иногда получать от нас полезные сообщения?", reply_markup = keyboard)
 
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ACCEPT.value)
-def user_accepting(message):
-    global ids
-    print("Start")
-    chat_id = message.chat.id
-    keyboard = types.InlineKeyboardMarkup()
-    accept_but = types.InlineKeyboardButton(text="Согласен", callback_data="accept")
-    notaccept_but = types.InlineKeyboardButton(text="Не согласен", callback_data="not_accept")
-    keyboard.add(accept_but)
-    keyboard.add(notaccept_but)
-    print("But ok")
-    bot.reply_to(message, "Отлично, остался один шаг. Вы согласны иногда получать от нас полезные сообщения?", reply_markup = keyboard)
+#@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ACCEPT.value)
+#def user_accepting(message):
+#    global ids
+#    print("Start")
+#    chat_id = message.chat.id
+#    keyboard = types.InlineKeyboardMarkup()
+#    accept_but = types.InlineKeyboardButton(text="Согласен", callback_data="accept")
+#    notaccept_but = types.InlineKeyboardButton(text="Не согласен", callback_data="not_accept")
+#    keyboard.add(accept_but)
+#    keyboard.add(notaccept_but)
+#    print("But ok")
+#    bot.reply_to(message, "Отлично, остался один шаг. Вы согласны иногда получать от нас полезные сообщения?", reply_markup = keyboard)
 
 
 if __name__ == '__main__': 
