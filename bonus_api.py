@@ -14,7 +14,7 @@ class Bonus(object):
     def __del__(self): 
         pass    
 
-    def check_balance(self, phone, token): 
+    def check_balance(self, phone): 
         self.card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?phone={}'.format(phone), headers = {
             'Content-Type': 'application/json;charset:UTF-8', 
             'token': self.token})
@@ -22,12 +22,12 @@ class Bonus(object):
         self.balance = self.card_info.json()['cards'][0]['actual_balance']
         return(self.balance)
 
-    def update_user_info(self, id, key, value, token): 
+    def update_user_info(self, id, key, value): 
         requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
             headers = {'Content-Type': 'application/json;charset:UTF-8', 'token': self.token}, 
             json = {key: value})
 
-    def get_user_id(self, card, token):
+    def get_user_id(self, card):
         self.card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?barcode={}'.format(card), headers = {
             'Content-Type': 'application/json;charset:UTF-8',
             'token': self.token})
