@@ -6,13 +6,12 @@ from telebot import types
 import requests
 import json
 from datetime import datetime
-from bonus_api import Bonus
 
 API_Token = "1213910596:AAGTixK8EYXSrFgTLlvdtk62LeUw1NFUxgk"
 bot = telebot.TeleBot(API_Token)
 ids = {}
-#states_db = {}
-print(states_db)
+states_db = {}
+
 states = {
     'check_balance': 1, 
     'enter_card': 2, 
@@ -20,6 +19,13 @@ states = {
     'enter_phone': 4, 
     'enter_name': 5
 }
+
+sign_in = requests.post('https://bonus.rarus-online.com:88/sign_in', headers = {'Content-Type': 'application/json;charset:UTF-8'}, json = {
+  "login"     :"2b1601u0",
+  "password"  :"954885eb725a09a357739eb94851f0e5c59b6c31", 
+  "role"      :"organization"})
+
+token = sign_in.json()['token']
 
 def days_between(d1, d2):
     d1 = datetime.strptime(d1, "%d.%m.%Y")
@@ -46,10 +52,8 @@ def balance(message):
 @bot.message_handler(func=lambda message: states_db[message.chat.id] == states['check_balance'])
 def user_entering_phone(message):
     phone = message.text
-    con = Bonus()
-    balance = con.check_balance(phone = phone)
-    #card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?phone={}'.format(phone), headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token})
-    #balance = card_info.json()['cards'][0]['actual_balance']
+    card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?phone={}'.format(phone), headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token})
+    balance = card_info.json()['cards'][0]['actual_balance']
     bot.reply_to(message, "Баланс Вашей карты: {} бонусов.".format(balance))
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -69,22 +73,18 @@ def callback_inline(call):
         elif call.data == "male":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
-            con = Bonus()
-            con.update_user_info(id = id, key = 'gender', value = 'male')
-            #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                  #headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'gender': 'male'})
+            requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'gender': 'male'})
             bot.send_message(chat_id, text="Введите Вашу дату рождения. Например: 01.01.1900")
             states_db[chat_id] = states['enter_birthdate']
             #dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
         elif call.data == "female":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
-            con = Bonus()
-            con.update_user_info(id = id, key = 'gender', value = 'female')
-            #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                  #headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'gender': 'female'})
+            requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'gender': 'female'})
             bot.send_message(chat_id, text="Введите Вашу дату рождения. Например: 01.01.1900")
             states_db[chat_id] = states['enter_birthdate']
             #dbworker.set_state(chat_id, config.States.S_ENTER_DATE.value)
@@ -95,12 +95,10 @@ def callback_inline(call):
         elif call.data == "accept":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
-            con = Bonus()
-            con.update_user_info(id = id, key = 'recieve_notifications', value = 1)
-            #res = requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                 # headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'recieve_notifications': 1})
-            #print(res.json())
+            res = requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'recieve_notifications': 1})
+            print(res.json())
             keyboard = types.InlineKeyboardMarkup()
             balance_but = types.InlineKeyboardButton(text="Баланс", callback_data="balance_check") 
             keyboard.add(balance_but)   
@@ -108,11 +106,9 @@ def callback_inline(call):
         elif call.data == "not_accept":
             chat_id=call.message.chat.id 
             id = ids[chat_id]
-            con = Bonus()
-            con.update_user_info(id = id, key = 'recieve_notifications', value = 0)            
-            #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                  #headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'recieve_notifications': 0})
+            requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'recieve_notifications': 0})
             keyboard = types.InlineKeyboardMarkup()
             balance_but = types.InlineKeyboardButton(text="Баланс", callback_data="balance_check") 
             keyboard.add(balance_but)   
@@ -124,10 +120,8 @@ def user_entering_barcode(message):
     global ids
     chat_id = message.chat.id
     card = message.text
-    con = Bonus()
-    id = con.get_user_id(card = card)
-    #card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?barcode={}'.format(card), headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token})
-    #id = card_info.json()['cards'][0]['user_id']
+    card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?barcode={}'.format(card), headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token})
+    id = card_info.json()['cards'][0]['user_id']
     ids[chat_id] = id
     bot.send_message(chat_id, text="Введите Ваш телефон.")
     states_db[chat_id] = states['enter_phone']
@@ -139,11 +133,9 @@ def user_entering_phone_reg(message):
     chat_id = message.chat.id
     phone = message.text
     id = ids[chat_id]
-    con = Bonus()
-    con.update_user_info(id = id, key = 'phone', value = '{}'.format(phone))    
-    #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                  #headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'phone': '{}'.format(phone)})
+    requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'phone': '{}'.format(phone)})
     bot.send_message(chat_id, text="Введите Ваше имя, фамилию и отчество.")
     states_db[chat_id] = states['enter_name']
     #dbworker.set_state(chat_id, config.States.S_ENTER_NAME.value)
@@ -155,11 +147,9 @@ def user_entering_name(message):
     chat_id = message.chat.id
     name = message.text
     id = ids[chat_id]
-    con = Bonus()
-    con.update_user_info(id = id, key = 'name', value = '{}'.format(name))
-    #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                 # headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                  #json = {'name': '{}'.format(name)})
+    requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'name': '{}'.format(name)})
     keyboard = types.InlineKeyboardMarkup()
     man_but = types.InlineKeyboardButton(text="Мужской", callback_data="male")
     woman_but = types.InlineKeyboardButton(text="Женский", callback_data="female")
@@ -176,11 +166,9 @@ def user_entering_date(message):
     date = message.text
     date = days_between('01.01.1970',date)*24*60*60*1000
     id = ids[chat_id]
-    con = Bonus()
-    con.update_user_info(id = id, key = 'birthdate', value = date)   
-    #requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
-                 # headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
-                 # json = {'birthdate': date})
+    requests.post('https://bonus.rarus-online.com:88/organization/user/{}'.format(id), 
+                  headers = {'Content-Type': 'application/json;charset:UTF-8', 'token':token}, 
+                  json = {'birthdate': date})
       
     #dbworker.set_state(chat_id, config.States.S_ACCEPT.value)
     keyboard = types.InlineKeyboardMarkup()
