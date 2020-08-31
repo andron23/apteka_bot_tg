@@ -4,8 +4,8 @@ import json
 class Bonus(object):
     def __init__(self):
         self.sign_in = requests.post('https://bonus.rarus-online.com:88/sign_in', headers = {'Content-Type': 'application/json;charset:UTF-8'}, json = {
-            "login": "2b1601u0",
-            "password": "954885eb725a09a357739eb94851f0e5c59b6c31",
+            "login": "bonus login",
+            "password": "bonus pas",
             "role": "organization"
                                                                                                                                                         })
 
