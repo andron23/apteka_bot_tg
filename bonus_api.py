@@ -11,9 +11,6 @@ class Bonus(object):
 
         self.token = self.sign_in.json()['token']
 
-    def __del__(self): 
-        pass    
-
     def check_balance(self, phone): 
         self.card_info = requests.get('https://bonus.rarus-online.com:88/organization/card?phone={}'.format(phone), headers = {
             'Content-Type': 'application/json;charset:UTF-8', 
